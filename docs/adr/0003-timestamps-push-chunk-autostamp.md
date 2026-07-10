@@ -1,38 +1,42 @@
-# ADR-0003: タイムスタンプは push_chunk の自動付与に委ねる
+# ADR-0003: Leave timestamps to push_chunk's auto-stamping
 
-- ステータス: 承認済み (2026-07-10)
-- 関連: ADR-0001、`docs/mudraka-wishlist.md`
+- Status: Accepted (2026-07-10)
+- Related: ADR-0001, `docs/mudraka-wishlist.md`
 
-## コンテキスト
+## Context
 
-LSL アウトレットへ渡すサンプルのタイムスタンプ付与方法として、
+Two ways to timestamp samples pushed to the LSL outlet:
 
-1. `outlet.push_chunk(samples)` を明示的タイムスタンプなしで呼び、LSL に自動付与させる
-   （チャンク末尾に `local_clock()` を打ち、公称レートで手前を遡って埋める）。
-2. `t0 + i / 834` を自前で計算して渡す。
+1. Call `outlet.push_chunk(samples)` with no explicit timestamp, letting LSL
+   auto-stamp (it stamps the chunk's last sample with `local_clock()` and
+   back-fills earlier samples at the nominal rate).
+2. Compute `t0 + i / 834` explicitly and pass a timestamp array.
 
-がある。`muse-lsl` / `OpenBCI_LSL` はいずれも (1)。
+`muse-lsl` and `OpenBCI_LSL` both use (1).
 
-## 決定
+## Decision
 
-(1) を採用する。`push_chunk(samples)` を明示タイムスタンプなしで呼ぶ。シンプルで
-コミュニティ慣行に一致し、単一 EMG ブリッジとして十分。
+Adopt (1). Call `push_chunk(samples)` with no explicit timestamp. Simple,
+matches community convention, and sufficient for a single EMG bridge.
 
-## 補足（ドキュメントとの差分・重要）
+## Note (important drift from the bootstrap document)
 
-ブートストラップ文書 §2 は「mudraka は per-sample のタイムスタンプ API をまだ公開して
-いない」と記載していた。しかし実際にインストールした **mudraka 0.3.1 では
-`Stream.timestamp(sample_index: int) -> float` が既に存在する**（実地確認済み）。
-これは §1.6 のウィッシュリスト項目「per-sample timestamp egress」が既に満たされて
-いることを意味する。
+The v1 bootstrap prompt (§2) stated that "mudraka does not yet expose a
+per-sample timestamp API." In practice, the installed **mudraka 0.3.1 already
+has `Stream.timestamp(sample_index: int) -> float`** (verified directly). This
+means the wishlist item from §1.6 ("per-sample timestamp egress") is already
+satisfied.
 
-この事実は v1 の決定を変えない。§4 のタイムスタンプ決定（自動付与）は「単純さ・慣行」を
-根拠にしており、より高精度が必要になった場合の逃げ道として `ClockModel` の存在を
-前提に置いていた。`Stream.timestamp()` はまさにその逃げ道であり、決定と矛盾しない。
-将来のセッションでドリフトが計測上の問題になった場合、この API を使って高精度な
-タイムスタンプへ移行できる（`docs/mudraka-wishlist.md` にその旨を記録した）。
+This does not change the v1 decision. The §4 timestamp decision (auto-stamping)
+was justified on simplicity/convention grounds, with the existence of a
+`ClockModel` assumed as the future escape hatch if higher precision is ever
+needed. `Stream.timestamp()` *is* that escape hatch, so it doesn't contradict
+the decision. If drift becomes a measured problem in a future session, this API
+can be used to move to explicit, higher-precision timestamps (recorded as such
+in `docs/mudraka-wishlist.md`).
 
-## 結果
+## Consequences
 
-- 実装が単純。ドリフトは未計測の受容リスクとして残す。
-- 将来、`Stream.timestamp()` を用いた明示タイムスタンプ方式へ非破壊的に移行可能。
+- Simple to implement. Drift is an accepted, unmeasured risk for now.
+- A future, non-breaking migration to explicit timestamps via
+  `Stream.timestamp()` remains available.

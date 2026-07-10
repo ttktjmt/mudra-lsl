@@ -1,32 +1,38 @@
-# ADR-0007: パッケージングは uv + hatchling、フラットレイアウト
+# ADR-0007: Package with uv + hatchling, flat layout
 
-- ステータス: 承認済み (2026-07-10)
-- 関連: ADR-0006
+- Status: Accepted (2026-07-10)
+- Related: ADR-0006
 
-## コンテキスト
+## Context
 
-パッケージングのツールとレイアウトを決める。mudraka は `uv` を採用し `uv.lock` を
-同梱している。`mudra-lsl` もファミリのツール慣行に合わせたい。
+Need to decide the packaging tooling and layout. `mudraka` uses `uv` and ships
+a `uv.lock`. `mudra-lsl` should match the family's tooling convention.
 
-## 決定
+## Decision
 
-- ビルドバックエンドは **hatchling**、依存・仮想環境管理は **uv**。`uv.lock` を
-  コミットする（mudraka に合わせる）。
-- パッケージレイアウトは **フラット**（リポジトリ直下 `mudra_lsl/`）。ブートストラップ
-  §5 の構成図に一致。
-- 公開向け **README はリポジトリ直下**（GitHub / PyPI が期待する標準位置）。§5 の図では
-  `docs/README.md` と記されていたが、ルート README を正とする（軽微な判断、
-  §0.5 の「decide and proceed」範囲）。ADR は `docs/adr/`。
-- CLI エントリポイント `mudra-lsl = "mudra_lsl.cli:main"`、ライブラリ API
-  `from mudra_lsl import stream` の両方を提供する（`muse-lsl` と同様の二面性）。
-- 依存ピン:
-  - `mudraka>=0.3,<0.4`（公開最新 0.3.1 を確認。Phase 2 の IMU 対応など将来の破壊的
-    変更が黙って挙動を変えないよう上限を切る）。
-  - `mne-lsl>=1.6,<2`、`bleak>=0.22`、`numpy>=1.24`。
-- Lint は `ruff`、テストは `pytest`。`device` マーカーで実機統合テストを既定スキップ。
+- Build backend is **hatchling**; dependency/venv management is **uv**. Commit
+  `uv.lock` (matching mudraka).
+- Package layout is **flat** (`mudra_lsl/` at the repo root), matching the
+  bootstrap prompt's §5 structure diagram.
+- The public-facing **README lives at the repo root** (the standard location
+  GitHub/PyPI expect). §5's diagram showed `docs/README.md`, but the root
+  README is treated as authoritative (a minor call within the "decide and
+  proceed" latitude of §0.5). ADRs live under `docs/adr/`.
+- Provide both a CLI entry point (`mudra-lsl = "mudra_lsl.cli:main"`) and a
+  library API (`from mudra_lsl import stream`) — the same dual usage as
+  `muse-lsl`.
+- Dependency pins:
+  - `mudraka>=0.3,<0.4` (latest published is 0.3.1; capped so a future
+    breaking mudraka release, e.g. Phase 2's IMU work, doesn't silently change
+    behavior).
+  - `mne-lsl>=1.6,<2`, `bleak>=0.22`, `numpy>=1.24`.
+- Lint with `ruff`, test with `pytest`. Real-device integration tests are
+  marked `device` and skipped by default.
 
-## 結果
+## Consequences
 
-- ファミリ内でツールが揃い、`uv sync` / `uv run pytest` で再現可能。
-- PyPI パッケージ名 `mudra-lsl` は 2026-07-10 時点で未使用を確認（JSON API が 404、
-  `pip index` も distribution なし）。ただし公開直前に再確認する（§0.5 category 4）。
+- Tooling is consistent across the family; reproducible via `uv sync` /
+  `uv run pytest`.
+- The PyPI package name `mudra-lsl` was confirmed unclaimed as of 2026-07-10
+  (JSON API 404, `pip index` finds no distribution). Re-check immediately
+  before the actual first publish (§0.5 category 4).

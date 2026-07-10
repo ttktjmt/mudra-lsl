@@ -1,27 +1,31 @@
-# ADR-0006: リポジトリのライセンスを Apache-2.0 にする
+# ADR-0006: License the repository under Apache-2.0
 
-- ステータス: 承認済み (2026-07-10)
-- 関連: ADR-0007
+- Status: Accepted (2026-07-10)
+- Related: ADR-0007
 
-## コンテキスト
+## Context
 
-`mudra-lsl` 自身の OSS ライセンスを決める必要がある。これは Wearable Devices の
-RawData ライセンス条項や third-party project としての位置づけ（README で TODO として
-保留、著者判断で書かない）とは **別物** である。
+`mudra-lsl` needs its own OSS license decision. This is **distinct** from
+Wearable Devices' RawData license terms and `mudra-lsl`'s standing as a
+third-party project (left as a placeholder in the README, deliberately not
+written by the agent).
 
-## 決定
+## Decision
 
-**Apache License 2.0** を採用する。
+Adopt **Apache License 2.0**.
 
-- リポジトリ直下に Apache-2.0 全文の `LICENSE` を置く（canonical テキストを取得）。
-- `pyproject.toml` の `[project]` に SPDX 形式で `license = "Apache-2.0"` を設定し、
-  対応する Trove 分類子も付す（hatchling が両者併記を受理することを実地確認済み）。
-- 依存の `mne-lsl`（BSD-3-Clause）、`bleak`（MIT 系）はいずれも Apache-2.0 プロジェクトが
-  依存する上で互換であり、特別な NOTICE 対応は不要。
+- Place the full canonical Apache-2.0 text as `LICENSE` at the repo root.
+- Set `license = "Apache-2.0"` (SPDX form) in `pyproject.toml`'s `[project]`
+  table, plus the corresponding Trove classifier (confirmed in practice that
+  hatchling accepts both together).
+- Dependencies `mne-lsl` (BSD-3-Clause) and `bleak` (MIT-family) are both
+  compatible with an Apache-2.0 project depending on them; no special NOTICE
+  handling is required.
 
-## 結果
+## Consequences
 
-- `mudraka` のライセンス（Apache-2.0）と完全一致し、mudra* ファミリ内でクロスライセンスの
-  摩擦が生じない。
-- RawData ライセンス／third-party 位置づけの文言は本 ADR の対象外であり、README では
-  プレースホルダのまま保留する（人間が Wearable Devices と確認する）。
+- Matches `mudraka`'s own license (Apache-2.0) exactly, so no cross-license
+  friction arises within the Mudra tooling family.
+- The RawData license / third-party positioning language is out of scope for
+  this ADR and remains a placeholder in the README pending human confirmation
+  with Wearable Devices.

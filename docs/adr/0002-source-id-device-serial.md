@@ -1,32 +1,37 @@
-# ADR-0002: LSL の source_id にデバイスのシリアル番号を使う
+# ADR-0002: Use the device's hardware serial number as the LSL source_id
 
-- ステータス: 承認済み (2026-07-10)
+- Status: Accepted (2026-07-10)
 
-## コンテキスト
+## Context
 
-LSL のコンシューマは `source_id` を「前回と同じ物理デバイスか」の判定キーとして使う。
-候補は 2 つ。
+LSL consumers use `source_id` as the key for "is this the same physical device
+as last time." Two candidates:
 
-- `bleak` が返す BLE アドレス／ハンドル。
-- デバイス自身のシリアル番号（標準 GATT の `0x2a25` = SERIAL_RIGHT、
-  `0x2a27` = SERIAL_LEFT を読み、`serial = left * 1_000_000 + right` で合成）。
+- The BLE address/handle `bleak` returns.
+- The device's own serial number (read from the standard GATT characteristics
+  `0x2a25` = SERIAL_RIGHT and `0x2a27` = SERIAL_LEFT, combined as
+  `serial = left * 1_000_000 + right`).
 
-BLE アドレスはプラットフォーム間で不安定である。macOS では `bleak` が CoreBluetooth の
-割り当てる UUID を返し、実ハードウェア MAC ではない（`mudra-viewer` で遭遇した
-再接続問題と同種）。Linux / Windows では実 MAC だが、プライバシーランダマイズや
-アダプタ交換で変わり得る。
+The BLE address is unstable across platforms. On macOS, `bleak` surfaces a
+CoreBluetooth-assigned UUID rather than the real hardware MAC (the same class
+of problem hit in `mudra-viewer`'s reconnection issue). On Linux/Windows it is
+a real MAC, but can still change under privacy-mode randomization or adapter
+swaps.
 
-## 決定
+## Decision
 
-接続時に一度だけシリアル番号を読み、`str(serial)` を `source_id` とする。
-読めない／パースできない場合は BLE アドレスにフォールバックし、警告ログを出す
-（アウトレット自体は利用可能なまま保つ）。
+Read the serial number once at connect time and use `str(serial)` as
+`source_id`. If it can't be read or parsed, fall back to the BLE address and
+log a warning (the outlet stays usable either way).
 
-シリアルのパースは「16 進文字列」（仕様準拠）を ASCII デコードして `int(x, 16)` で行う
-(`constants.parse_serial_field`)。合成式は `constants.combine_serial`。
+Serial parsing treats the value as a hex string (per the signal spec), ASCII
+decoded and parsed with `int(x, 16)` (`constants.parse_serial_field`). The
+combination formula lives in `constants.combine_serial`.
 
-## 結果
+## Consequences
 
-- 同一バンドの記録をセッションやプラットフォームをまたいで一意に紐付けできる。
-- シリアル取得は BLE 読み取り 2 回のコストが接続時に加わる（許容範囲）。
-- フォールバック経路は警告を出すため、`source_id` の由来がログから追える。
+- Recordings of the same physical band can be tied together across sessions
+  and platforms.
+- Reading the serial costs two extra BLE reads at connect time (acceptable).
+- The fallback path logs a warning, so the provenance of `source_id` is always
+  traceable from the logs.

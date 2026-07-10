@@ -1,38 +1,46 @@
-# ADR-0001: LSL バインディングに mne-lsl を採用する
+# ADR-0001: Use mne-lsl as the LSL binding
 
-- ステータス: 承認済み (2026-07-10)
-- 関連: ADR-0003, ADR-0004
+- Status: Accepted (2026-07-10)
+- Related: ADR-0003, ADR-0004
 
-## コンテキスト
+## Context
 
-Python から LSL アウトレットを公開する主要な選択肢は 2 つある。
+There are two main options for publishing an LSL outlet from Python.
 
-- `pylsl` — 公式バインディング。`muse-lsl` や `OpenBCI_LSL` が採用している実績あり。
-- `mne-lsl`（`mne_lsl.lsl` モジュール）— `pylsl` の低レベルバインディングを置き換える
-  後継。FCBG がメンテナンスし 2026 年まで継続リリース。BSD-3-Clause。Python ≥ 3.11 を要求。
+- `pylsl` — the official binding, with a track record (`muse-lsl`,
+  `OpenBCI_LSL` both use it).
+- `mne-lsl` (the `mne_lsl.lsl` module) — the actively maintained successor to
+  `pylsl`'s low-level binding. Maintained by FCBG with releases continuing
+  through 2026. BSD-3-Clause. Requires Python ≥ 3.11.
 
-`mudra-lsl` は EMG を将来的に MNE-Python ベースの解析（運動単位分解など）へ渡すことを
-見据えている。単一アウトレットの EMG ブリッジとしては両者に機能差はない。
+`mudra-lsl` anticipates eventually feeding EMG into MNE-Python-based analysis
+(e.g. motor-unit decomposition). For a single-outlet EMG bridge, the two
+options have no functional difference otherwise.
 
-## 決定
+## Decision
 
-`mne_lsl.lsl` を採用する。`StreamInfo` / `StreamOutlet` / `push_chunk` の低レベル API は
-`pylsl` とほぼ同形であり、移行コストは低い。`requires-python = ">=3.11"` を
-`pyproject.toml` に設定する（`mne-lsl` の要求に一致、許容範囲内であることは確認済み）。
+Adopt `mne_lsl.lsl`. Its low-level API (`StreamInfo` / `StreamOutlet` /
+`push_chunk`) closely mirrors `pylsl`'s, so migration cost is low. Set
+`requires-python = ">=3.11"` in `pyproject.toml` (matches `mne-lsl`'s
+requirement; confirmed acceptable).
 
-インストール済みバージョン (`mne-lsl 1.13.2`) で以下を実地確認した。
+The following was verified in practice against the installed version
+(`mne-lsl 1.13.2`):
 
-- コンストラクタ: `StreamInfo(name, stype, n_channels, sfreq, dtype, source_id)`。
-- `set_channel_names` / `set_channel_types` / `set_channel_units` が存在し往復する。
-- `desc` は **プロパティ**（メソッド呼び出しではない）で `XMLElement` を返し、
-  `append_child_value(name, value)` が使える。ブートストラップで懸念された
-  「`desc` vs `desc()`」は本バージョンではプロパティ側で確定。
-- `push_chunk(x, timestamp=None, pushThrough=True)`。`x` は `(n_samples, n_channels)`
-  形状を要求し、逆形状は `ValueError` を送出する（ADR-0004 の転置の根拠）。
+- Constructor: `StreamInfo(name, stype, n_channels, sfreq, dtype, source_id)`.
+- `set_channel_names` / `set_channel_types` / `set_channel_units` exist and
+  round-trip.
+- `desc` is a **property** (not a method call), returning an `XMLElement` with
+  `append_child_value(name, value)`. The "`desc` vs `desc()`" ambiguity flagged
+  in the bootstrap prompt is settled in favor of the property in this version.
+- `push_chunk(x, timestamp=None, pushThrough=True)`. `x` must have shape
+  `(n_samples, n_channels)`; the reverse shape raises `ValueError` (the basis
+  for the transpose requirement in ADR-0004).
 
-## 結果
+## Consequences
 
-- MNE-Python エコシステムへ自然に接続できる。
-- Python 3.11 未満は非対応。現時点で許容。
-- 依存に `mne`（`mne-lsl` 経由）と `scipy` などが入る。`mne` 本体は
-  `examples` extra のみで必要とし、コア機能は `mne-lsl` だけで動く。
+- Plugs naturally into the MNE-Python ecosystem.
+- Drops support for Python < 3.11. Acceptable for now.
+- Pulls in `mne` (via `mne-lsl`) and `scipy` as dependencies. `mne` itself is
+  only required by the `examples` extra; the core package runs on `mne-lsl`
+  alone.
