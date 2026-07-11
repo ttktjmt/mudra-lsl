@@ -134,8 +134,9 @@ Keep the orchestrating session lean; push the heavy thinking into the right tier
 ## Working conventions
 
 - **Branch/commit/push.** Never commit straight to `main` for feature work. Work
-  on a short-lived branch, open a PR, let CI (`.github/workflows/release.yml`
-  test job) go green. Low-risk PRs (bug fixes, docs, additive publishers, patch
+  on a short-lived `claude/`-prefixed branch (routines can only push that
+  prefix by default), open a PR, let CI (`.github/workflows/release.yml` test
+  job) go green. Low-risk PRs (bug fixes, docs, additive publishers, patch
   dependency bumps) may be self-merged once CI is green. PRs carrying a
   `Proposed` ADR or touching an irreversible wait for the maintainer.
 - **Tests and lint gate everything.** `uv run pytest` and `uv run ruff check .`

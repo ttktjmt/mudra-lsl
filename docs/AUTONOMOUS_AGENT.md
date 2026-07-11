@@ -44,7 +44,9 @@ Choose the single highest-value actionable item. In rough priority:
 
 Then, as ponytail:
 
-- Branch: `agent/<short-topic>`.
+- Branch: `claude/<short-topic>`. Routines can only push `claude/`-prefixed
+  branches unless the routine's "Allow unrestricted branch pushes" is enabled
+  for this repo, so stay on that prefix.
 - Implement the **minimum that works**, behind the existing `StreamPublisher`
   seam for new signals (one class + one line in `app.py`, not a rewrite).
 - Write/extend offline tests using the synthetic-frame → real-`mudraka` → fake
