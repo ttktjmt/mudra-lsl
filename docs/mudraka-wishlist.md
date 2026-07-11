@@ -5,16 +5,22 @@ published dependency only and never modifies it. When we hit a signal-support
 gap, we record it here as a candidate feature request instead of working around
 it.
 
-Each entry is written so it could become a GitHub issue on `ttktjmt/mudraka`
-more or less verbatim. **These are drafts** — they have not been filed (this
-project's tooling is not authorized to open issues on the mudraka repo). A human
-should file or reject them.
+Each entry has been filed as a GitHub issue on `ttktjmt/mudraka`. This file
+stays the single source of truth for the roadmap link between the two repos:
+when an issue is resolved and released, the corresponding publisher lands here
+and the entry is marked done.
+
+| Wishlist item | mudraka issue | Status |
+|---------------|---------------|--------|
+| IMU `IDecoder` | [ttktjmt/mudraka#2](https://github.com/ttktjmt/mudraka/issues/2) | Open |
+| Discrete/event decode | [ttktjmt/mudraka#3](https://github.com/ttktjmt/mudraka/issues/3) | Open |
+| Batched timestamp egress | [ttktjmt/mudraka#4](https://github.com/ttktjmt/mudraka/issues/4) | Open |
 
 > Verified against `mudraka 0.3.1` (installed from PyPI, 2026-07-10).
 
 ---
 
-## 1. IMU `IDecoder` (needed for Phase 2)
+## 1. IMU `IDecoder` (needed for Phase 2) — [#2](https://github.com/ttktjmt/mudraka/issues/2)
 
 **Capability.** A decoder for the Mudra Link's IMU stream, analogous to the
 existing sEMG (SNC) decoder, exposed through mudraka's `IDecoder` extension
@@ -40,7 +46,7 @@ better; if they need separate `Stream` objects, that is fine too.
 
 ---
 
-## 2. Discrete / event decode: gesture, pressure, navigation, button (Phase 3)
+## 2. Discrete / event decode: gesture, pressure, navigation, button (Phase 3) — [#3](https://github.com/ttktjmt/mudraka/issues/3)
 
 **Capability.** Decoding of the COMMAND-channel discrete events (gestures,
 pressure, navigation, button) delivered on BLE char `0xfff1`.
@@ -65,7 +71,7 @@ flags the fork; it does not pick a side.
 
 ---
 
-## 3. Per-sample timestamp egress — ALREADY AVAILABLE (0.3.1)
+## 3. Per-sample timestamp egress — ALREADY AVAILABLE (0.3.1); follow-on [#4](https://github.com/ttktjmt/mudraka/issues/4)
 
 **Status: satisfied.** This was seeded as a nice-to-have ("a
 `sample_time(index) -> float` getter over mudraka's internal `ClockModel`"), but
