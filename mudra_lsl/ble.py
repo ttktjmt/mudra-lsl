@@ -11,9 +11,8 @@ notification bytes to a callback.
 
 from __future__ import annotations
 
-import asyncio
 import logging
-from collections.abc import Awaitable, Callable
+from collections.abc import Callable
 from dataclasses import dataclass
 
 from bleak import BleakClient, BleakScanner
@@ -112,7 +111,7 @@ class MudraLinkConnection:
 
     Intentionally low-level: the caller decides when to connect, read identity,
     enable SNC, subscribe, and tear down. The reconnection *policy* lives in
-    :func:`connect_with_backoff` and the orchestrator, not here.
+    the orchestrator's ``_supervise`` loop (:mod:`mudra_lsl.app`), not here.
     """
 
     def __init__(
@@ -240,37 +239,3 @@ class MudraLinkConnection:
 def backoff_delay(attempt: int, *, base: float = 1.0, cap: float = 30.0) -> float:
     """Exponential backoff (1, 2, 4, ... capped) for reconnect attempts."""
     return min(cap, base * (2**attempt))
-
-
-async def connect_with_backoff(
-    make_connection: Callable[[], MudraLinkConnection | Awaitable[MudraLinkConnection]],
-    *,
-    max_attempts: int | None = None,
-    base_delay: float = 1.0,
-    should_continue: Callable[[], bool] = lambda: True,
-) -> MudraLinkConnection:
-    """Build and connect a :class:`MudraLinkConnection`, retrying with backoff.
-
-    ``make_connection`` is a (possibly async) factory returning a *fresh*
-    connection object each attempt — this matters on macOS, where reusing a
-    retained CoreBluetooth handle after a drop is exactly the failure mode the
-    ``--forget`` path avoids. ``max_attempts=None`` retries indefinitely (until
-    ``should_continue`` returns False).
-    """
-    attempt = 0
-    while should_continue():
-        try:
-            result = make_connection()
-            conn = await result if asyncio.iscoroutine(result) else result
-            await conn.connect()
-            return conn
-        except Exception as exc:  # noqa: BLE001 - retry on any connect failure
-            attempt += 1
-            if max_attempts is not None and attempt >= max_attempts:
-                raise
-            delay = backoff_delay(attempt - 1, base=base_delay)
-            log.warning(
-                "connect attempt %d failed (%s); retrying in %.1fs", attempt, exc, delay
-            )
-            await asyncio.sleep(delay)
-    raise asyncio.CancelledError("connection cancelled before establishing a link")
