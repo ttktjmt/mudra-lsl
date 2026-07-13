@@ -12,11 +12,14 @@ and the entry is marked done.
 
 | Wishlist item | mudraka issue | Status |
 |---------------|---------------|--------|
-| IMU `IDecoder` | [ttktjmt/mudraka#2](https://github.com/ttktjmt/mudraka/issues/2) | Open |
-| Discrete/event decode | [ttktjmt/mudraka#3](https://github.com/ttktjmt/mudraka/issues/3) | Open |
+| IMU `IDecoder` | [ttktjmt/mudraka#2](https://github.com/ttktjmt/mudraka/issues/2) | Open — [PR #5](https://github.com/ttktjmt/mudraka/pull/5) open, unmerged, provisional |
+| Discrete/event decode | [ttktjmt/mudraka#3](https://github.com/ttktjmt/mudraka/issues/3) | Open — design decided, no PR yet |
 | Batched timestamp egress | [ttktjmt/mudraka#4](https://github.com/ttktjmt/mudraka/issues/4) | Open |
 
-> Verified against `mudraka 0.3.1` (installed from PyPI, 2026-07-10).
+> Verified against `mudraka 0.3.1` (installed from PyPI, 2026-07-10). No new
+> release since; the items below are still pre-release work-in-progress on
+> `mudraka`'s side, tracked here so a future cycle knows what to check next
+> instead of re-reading issue history.
 
 ---
 
@@ -44,6 +47,17 @@ publisher seam stays uniform:
 If IMU and EMG can be driven from one `Stream` with per-modality profiles, even
 better; if they need separate `Stream` objects, that is fine too.
 
+**Update (2026-07-12).** The maintainer resolved the open question: **separate
+`Stream` objects**, one `IDecoder` each — SNC and IMU differ in rate/clock, so
+a single stream would need real engine surgery, while two streams need none.
+[`mudraka` PR #5](https://github.com/ttktjmt/mudraka/pull/5) implements
+`ImuDecoder` + `imu_profile()` on this basis. It is **open, unmerged, and
+explicitly provisional**: the wire layout is validated only against the spec's
+hand-authored byte examples, not yet against real hardware captures (the same
+posture SNC held before its own captures existed). Nothing for `mudra-lsl` to
+implement until this merges and mudraka cuts a release; check PR #5's status
+next cycle before re-scanning issue comments.
+
 ---
 
 ## 2. Discrete / event decode: gesture, pressure, navigation, button (Phase 3) — [#3](https://github.com/ttktjmt/mudraka/issues/3)
@@ -68,6 +82,14 @@ plausible designs:
 Recommendation: decide (a) vs (b) when Phase 3 actually starts, informed by
 whether other mudraka consumers also want decoded events. This wishlist just
 flags the fork; it does not pick a side.
+
+**Update (2026-07-12).** The maintainer decided **(a)**: mudraka keeps this as
+its own job — gesture/pressure/navigation/button get a dedicated
+`feed -> decode -> event queue -> drain` path, parallel to (not routed
+through) the sample ring/clock. Scope is limited to those four discrete input
+events; the rest of the COMMAND tag table stays out of scope until requested.
+Sequencing: this lands **after** #2 (IMU). No PR yet — still nothing for
+`mudra-lsl` to build against.
 
 ---
 
