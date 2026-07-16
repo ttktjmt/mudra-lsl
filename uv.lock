@@ -687,7 +687,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "bleak", specifier = ">=0.22" },
+    { name = "bleak", specifier = ">=0.22,<4" },
     { name = "mne", marker = "extra == 'examples'", specifier = ">=1.6" },
     { name = "mne-lsl", specifier = ">=1.6,<2" },
     { name = "mudraka", specifier = ">=0.3,<0.4" },
