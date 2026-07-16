@@ -33,7 +33,7 @@ classifiers = [
 dependencies = [
     "mudraka>=0.3,<0.4",
     "mne-lsl>=1.6,<2",
-    "bleak>=0.22",
+    "bleak>=0.22,<4",
     "numpy>=1.24",
 ]
 
