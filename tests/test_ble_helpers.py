@@ -68,17 +68,19 @@ def test_device_info_source_id_falls_back_to_address():
     assert info.source_id == "AA:BB:CC"
 
 
-def test_mudra_link_connection_accepts_adapter_kwarg():
+def test_mudra_link_connection_accepts_adapter_kwarg(recwarn):
     """Constructing with ``adapter=`` must keep working against the real bleak.
 
-    bleak deprecated the flat ``adapter`` kwarg (in favour of
+    bleak deprecated its own flat ``adapter`` kwarg (in favour of
     ``bluez={"adapter": ...}``) starting in 3.0; every other test fakes
     ``MudraLinkConnection`` entirely, so nothing else exercises the real
-    construction path. If a future bleak release drops the deprecated kwarg,
-    this fails loudly instead of ``--adapter`` silently breaking in the field.
+    construction path. ``MudraLinkConnection`` translates our ``--adapter``
+    flag to the non-deprecated ``bluez=`` form internally, so this must not
+    raise the ``DeprecationWarning`` bleak emits for its own deprecated kwarg.
     """
     conn = MudraLinkConnection("AA:BB:CC:DD:EE:FF", adapter="hci0")
     assert conn.address == "AA:BB:CC:DD:EE:FF"
+    assert not [w for w in recwarn.list if issubclass(w.category, DeprecationWarning)]
 
 
 def test_backoff_delay_grows_then_caps():

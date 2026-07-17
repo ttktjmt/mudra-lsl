@@ -64,7 +64,7 @@ async def scan(
     """
     kwargs = {"timeout": timeout, "return_adv": True}
     if adapter is not None:
-        kwargs["adapter"] = adapter
+        kwargs["bluez"] = {"adapter": adapter}
     discovered = await BleakScanner.discover(**kwargs)
 
     needle = name_substring.lower()
@@ -126,7 +126,7 @@ class MudraLinkConnection:
         self._on_disconnect = on_disconnect
         client_kwargs: dict = {"timeout": connect_timeout}
         if adapter is not None:
-            client_kwargs["adapter"] = adapter
+            client_kwargs["bluez"] = {"adapter": adapter}
         self._client = BleakClient(
             target,
             disconnected_callback=self._handle_disconnect,
