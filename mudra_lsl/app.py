@@ -116,7 +116,6 @@ class MudraLslApp:
 
                 await conn.enable_snc()
                 await conn.start_notify(self._on_notification)
-                self._reconnect_attempt = 0
                 log.info("streaming EMG over LSL; press Ctrl-C to stop")
 
                 await self._poll_loop()
@@ -125,7 +124,10 @@ class MudraLslApp:
             except Exception as exc:  # noqa: BLE001 - connect/setup failures
                 if not self._running:
                     break
-                if not await self._handle_connection_error(exc):
+                if not self._reconnect:
+                    log.error("connection failed and --no-reconnect set: %s", exc)
+                    break
+                if not await self._handle_reconnect(f"connection error: {exc}"):
                     break
                 continue
             finally:
@@ -140,26 +142,33 @@ class MudraLslApp:
                 if not self._reconnect:
                     log.warning("link lost and --no-reconnect set; stopping")
                     break
-                self._reconnect_attempt = 0
-                log.warning("link lost; attempting to reconnect")
-                await self._sleep_or_wake(ble.backoff_delay(0))
+                if not await self._handle_reconnect("link lost"):
+                    break
 
-    async def _handle_connection_error(self, exc: Exception) -> bool:
-        """Handle a connect/setup failure. Returns True to keep retrying."""
-        if not self._reconnect:
-            log.error("connection failed and --no-reconnect set: %s", exc)
-            return False
+    async def _handle_reconnect(self, reason: str) -> bool:
+        """Count a reconnect attempt, back off, and check the attempt cap.
+
+        Shared by both failure modes that require a fresh connection: an
+        outright connect/setup exception, and a link dropped mid-stream after
+        a prior connect succeeded. Both count against ``--max-reconnect-
+        attempts`` — a device that connects fine but drops repeatedly right
+        after is just as much a "failed reconnect" as one that never connects,
+        so the cap must not reset on every transient success. Returns True to
+        keep retrying.
+        """
         self._reconnect_attempt += 1
         if (
             self._max_reconnect_attempts is not None
             and self._reconnect_attempt > self._max_reconnect_attempts
         ):
-            log.error("giving up after %d reconnect attempts", self._reconnect_attempt - 1)
+            log.error(
+                "giving up after %d reconnect attempts (%s)", self._reconnect_attempt - 1, reason
+            )
             return False
         delay = ble.backoff_delay(self._reconnect_attempt - 1)
         log.warning(
-            "connection error: %s; retrying in %.1fs (attempt %d)",
-            exc,
+            "%s; retrying in %.1fs (attempt %d)",
+            reason,
             delay,
             self._reconnect_attempt,
         )
