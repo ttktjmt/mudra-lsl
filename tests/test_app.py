@@ -127,6 +127,60 @@ class ReconnectingConnection(FakeConnection):
             self.on_disconnect()  # simulate an unexpected drop after the first batch
 
 
+class AlwaysDropsConnection(FakeConnection):
+    """Every connection streams one frame then drops the link immediately.
+
+    Simulates a device that connects fine but never stays up (e.g. a
+    persistent RF/firmware issue) — the scenario ``--max-reconnect-attempts``
+    is meant to bound even though each individual ``connect()`` succeeds.
+    """
+
+    session: synth.Session | None = None
+
+    async def start_notify(self, handler):
+        self.handler = handler
+        self.notifying = True
+        for frame in self.session.frames:
+            handler(0, bytearray(frame))
+        if self.on_disconnect is not None:
+            self.on_disconnect()
+
+
+def test_max_reconnect_attempts_bounds_repeated_link_drops(monkeypatch):
+    """A link that drops every time it (re)connects must not retry forever.
+
+    Regression test: the reconnect path used to reset its attempt counter to
+    zero on every successful ``connect()``, so a device that connected fine
+    but dropped immediately after streaming evaded ``--max-reconnect-attempts``
+    entirely and retried without limit. Only outright connect *exceptions*
+    were ever bounded.
+    """
+    session = synth.build_session(n_frames=4)
+    AlwaysDropsConnection.session = session
+    FakeConnection.instances = []
+
+    async def fake_find_device(**kwargs):
+        return DEVICE_INFO.address
+
+    monkeypatch.setattr(app_module.ble, "find_device", fake_find_device)
+    monkeypatch.setattr(app_module.ble, "MudraLinkConnection", AlwaysDropsConnection)
+    monkeypatch.setattr(app_module.ble, "backoff_delay", lambda *a, **k: 0.0)
+
+    application = app_module.MudraLslApp(
+        address=DEVICE_INFO.address,
+        max_reconnect_attempts=2,
+        poll_interval=0.01,
+        outlet_factory=RecordingFactory(),
+    )
+    # No `duration` set: without the cap this would hang forever redialing a
+    # link that always drops. A bounded run proves the cap was honored.
+    asyncio.run(asyncio.wait_for(application.run(), timeout=5.0))
+
+    # The initial connection plus exactly 2 reconnect attempts, then give up
+    # (if the cap were not honored, wait_for above would time out instead).
+    assert len(FakeConnection.instances) == 3
+
+
 def test_app_reconnects_and_outlet_persists_across_drop(monkeypatch):
     s0 = synth.build_session(n_frames=8, seed=1)
     s1 = synth.build_session(n_frames=8, seed=2)
