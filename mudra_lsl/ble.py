@@ -2,8 +2,9 @@
 
 This module owns everything device-specific about talking to the band over
 Bluetooth Low Energy: scanning, connecting, reading identity characteristics,
-enabling/disabling the SNC (sEMG) stream, subscribing to notifications, and a
-connect-with-backoff helper for the reconnection loop that ``app.py`` drives.
+enabling/disabling the SNC (sEMG) stream, and subscribing to notifications.
+The reconnection *policy*, including backoff timing (:func:`backoff_delay`),
+lives in the orchestrator's ``_supervise`` loop (:mod:`mudra_lsl.app`), not here.
 
 It deliberately knows nothing about ``mudraka`` or LSL — it just hands raw
 notification bytes to a callback.
